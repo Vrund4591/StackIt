@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import QuestionCard from '../components/QuestionCard'
 import SearchFilters from '../components/SearchFilters'
 import LoadingSkeleton from '../components/LoadingSkeleton'
+import LeftSidebar from '../components/LeftSidebar'
+import RightSidebar from '../components/RightSidebar'
 
 const Home = () => {
   const [questions, setQuestions] = useState([])
@@ -96,78 +98,91 @@ const Home = () => {
   }
 
   return (
-    <div className="">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-heading font-bold text-primary">
-          Recent Questions
-        </h1>
-        <Link to="/ask" className="btn-primary">
-          Ask Question
-        </Link>
+    <div className="flex gap-6 max-w-7xl mx-auto">
+      {/* Left Sidebar */}
+      <div className="hidden lg:block w-64 flex-shrink-0">
+        <LeftSidebar />
       </div>
 
-      <SearchFilters 
-        filters={filters} 
-        onFiltersChange={handleFiltersChange}
-      />
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-          <button 
-            onClick={() => fetchQuestions(1, true)}
-            className="ml-2 underline"
-          >
-            Try Again
-          </button>
+      {/* Main Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-heading font-bold text-primary">
+            Recent Questions
+          </h1>
+          <Link to="/ask" className="btn-primary">
+            Ask Question
+          </Link>
         </div>
-      )}
 
-      {loading ? (
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <LoadingSkeleton key={i} type="question" />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="space-y-4">
-            {questions.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">
-                  {filters.search || filters.tag 
-                    ? 'No questions found matching your criteria.' 
-                    : 'No questions found. Be the first to ask!'
-                  }
-                </p>
-              </div>
-            ) : (
-              questions.map((question, index) => (
-                <div 
-                  key={question.id}
-                  ref={index === questions.length - 1 ? lastQuestionElementRef : null}
-                >
-                  <QuestionCard question={question} />
-                </div>
-              ))
-            )}
+        <SearchFilters 
+          filters={filters} 
+          onFiltersChange={handleFiltersChange}
+        />
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+            <button 
+              onClick={() => fetchQuestions(1, true)}
+              className="ml-2 underline"
+            >
+              Try Again
+            </button>
           </div>
+        )}
 
-          {loadingMore && (
-            <div className="space-y-4 mt-4">
-              {[...Array(3)].map((_, i) => (
-                <LoadingSkeleton key={i} type="question" />
-              ))}
+        {loading ? (
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <LoadingSkeleton key={i} type="question" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4">
+              {questions.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">
+                    {filters.search || filters.tag 
+                      ? 'No questions found matching your criteria.' 
+                      : 'No questions found. Be the first to ask!'
+                    }
+                  </p>
+                </div>
+              ) : (
+                questions.map((question, index) => (
+                  <div 
+                    key={question.id}
+                    ref={index === questions.length - 1 ? lastQuestionElementRef : null}
+                  >
+                    <QuestionCard question={question} />
+                  </div>
+                ))
+              )}
             </div>
-          )}
 
-          {!hasMore && questions.length > 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">You've reached the end!</p>
-            </div>
-          )}
-        </>
-      )}
+            {loadingMore && (
+              <div className="space-y-4 mt-4">
+                {[...Array(3)].map((_, i) => (
+                  <LoadingSkeleton key={i} type="question" />
+                ))}
+              </div>
+            )}
+
+            {!hasMore && questions.length > 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">You've reached the end!</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Right Sidebar */}
+      <div className="hidden xl:block w-80 flex-shrink-0">
+        <RightSidebar />
+      </div>
     </div>
   )
 }
