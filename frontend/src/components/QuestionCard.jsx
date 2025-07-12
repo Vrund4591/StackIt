@@ -4,6 +4,41 @@ import VoteButton from './VoteButton'
 const QuestionCard = ({ question }) => {
   return (
     <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+      {/* Author info at top - Reddit style */}
+      <div className="flex items-center gap-3 mb-4">
+        <Link to={`/user/${question.author.username}`} className="flex items-center gap-3 hover:opacity-80">
+          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+            {question.author.avatar ? (
+              <img 
+                src={question.author.avatar} 
+                alt={question.author.username}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            ) : (
+              <span className="text-sm font-bold text-blue-600">
+                {question.author.username.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <span className="font-medium text-gray-900">{question.author.username}</span>
+        </Link>
+        
+        {/* Move date, answers, and solved status to the right */}
+        <div className="ml-auto flex items-center gap-3 text-sm">
+          <span className="text-gray-500">{new Date(question.createdAt).toLocaleDateString()}</span>
+          <span className="text-gray-500">•</span>
+          <span className={`${question.answerCount > 0 ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+            {question.answerCount} answer{question.answerCount !== 1 ? 's' : ''}
+          </span>
+          {question.hasAcceptedAnswer && (
+            <>
+              <span className="text-gray-500">•</span>
+              <span className="text-green-600 font-medium">✓ Solved</span>
+            </>
+          )}
+        </div>
+      </div>
+
       <div className="flex gap-4">
         <VoteButton
           type="question"
@@ -33,33 +68,6 @@ const QuestionCard = ({ question }) => {
                 {tag.name}
               </span>
             ))}
-          </div>
-          
-          <div className="flex items-center gap-4 mb-3 text-sm text-gray-600">
-            <span>
-              Asked by{' '}
-              <Link 
-                to={`/user/${question.author.username}`}
-                className="font-medium text-blue-600 hover:text-blue-800"
-              >
-                {question.author.username}
-              </Link>
-            </span>
-            <span>{new Date(question.createdAt).toLocaleDateString()}</span>
-            <span>{question.views} views</span>
-          </div>
-          
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>Asked by <strong>{question.author.username}</strong></span>
-            <div className="flex items-center gap-4">
-              <span className={`${question.answerCount > 0 ? 'text-green-600 font-medium' : ''}`}>
-                {question.answerCount} answer{question.answerCount !== 1 ? 's' : ''}
-              </span>
-              {question.hasAcceptedAnswer && (
-                <span className="text-green-600 font-medium">✓ Solved</span>
-              )}
-              <span>{new Date(question.createdAt).toLocaleDateString()}</span>
-            </div>
           </div>
         </div>
       </div>
