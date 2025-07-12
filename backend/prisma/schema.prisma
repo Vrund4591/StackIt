@@ -55,6 +55,9 @@ model Question {
   votes    Vote[]
   tags     QuestionTag[]
 
+  @@index([createdAt])
+  @@index([authorId])
+  @@index([title])
   @@map("questions")
 }
 
@@ -73,6 +76,9 @@ model Answer {
   votes    Vote[]
   comments Comment[]
 
+  @@index([questionId])
+  @@index([authorId])
+  @@index([isAccepted])
   @@map("answers")
 }
 
@@ -85,6 +91,7 @@ model Tag {
   // Relations
   questions QuestionTag[]
 
+  @@index([name])
   @@map("tags")
 }
 
@@ -116,6 +123,9 @@ model Vote {
 
   @@unique([userId, questionId])
   @@unique([userId, answerId])
+  @@index([questionId])
+  @@index([answerId])
+  @@index([userId])
   @@map("votes")
 }
 

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import VoteButton from '../components/VoteButton'
 import AnswerCard from '../components/AnswerCard'
+import LoadingSkeleton from '../components/LoadingSkeleton'
 
 const QuestionDetail = () => {
   const { id } = useParams()
@@ -23,6 +24,8 @@ const QuestionDetail = () => {
   const fetchQuestion = async () => {
     try {
       setLoading(true)
+      setError('')
+      
       const headers = {}
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
@@ -33,14 +36,17 @@ const QuestionDetail = () => {
       })
 
       if (!response.ok) {
-        throw new Error('Question not found')
+        if (response.status === 404) {
+          throw new Error('Question not found')
+        }
+        throw new Error('Failed to load question')
       }
 
       const data = await response.json()
       setQuestion(data)
     } catch (error) {
       console.error('Error fetching question:', error)
-      setError('Failed to load question')
+      setError(error.message)
     } finally {
       setLoading(false)
     }
@@ -113,21 +119,34 @@ const QuestionDetail = () => {
 
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <LoadingSkeleton type="question" />
+        <div className="space-y-4">
+          {[...Array(2)].map((_, i) => (
+            <LoadingSkeleton key={i} type="answer" />
+          ))}
+        </div>
       </div>
     )
   }
 
-  if (error && !question) {
+  if (error) {
     return (
-      <div className="text-center py-8">
-        <p className="text-red-600">{error}</p>
+      <div className="max-w-4xl mx-auto text-center py-8">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p className="font-medium">{error}</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="mt-2 text-blue-600 hover:text-blue-800 underline"
+          >
+            Go back to home
+          </button>
+        </div>
       </div>
     )
   }
 
-  if (!question) return <div>Question not found</div>
+  if (!question) return null
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

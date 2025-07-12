@@ -4,11 +4,12 @@ const { authenticateToken, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Get all questions
+// Get all questions - Optimized version
 router.get('/', optionalAuth, async (req, res) => {
   try {
-    const { page = 1, limit = 10, tag, search } = req.query;
-    const skip = (page - 1) * limit;
+    const { page = 1, limit = 10, tag, search, sort = 'newest' } = req.query;
+    const skip = (page - 1) * parseInt(limit);
+    const take = Math.min(parseInt(limit), 50); // Cap at 50 items
 
     const where = {};
     
@@ -29,87 +30,167 @@ router.get('/', optionalAuth, async (req, res) => {
       };
     }
 
+    // Determine sort order
+    let orderBy = { createdAt: 'desc' };
+    switch (sort) {
+      case 'votes':
+        orderBy = { votes: { _count: 'desc' } };
+        break;
+      case 'answers':
+        orderBy = { answers: { _count: 'desc' } };
+        break;
+      case 'oldest':
+        orderBy = { createdAt: 'asc' };
+        break;
+      default:
+        orderBy = { createdAt: 'desc' };
+    }
+
+    // Optimized query - only select necessary fields
     const questions = await req.prisma.question.findMany({
       where,
-      skip: parseInt(skip),
-      take: parseInt(limit),
-      orderBy: { createdAt: 'desc' },
-      include: {
+      skip,
+      take,
+      orderBy,
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        createdAt: true,
+        views: true,
         author: {
-          select: { id: true, username: true }
+          select: { 
+            id: true, 
+            username: true 
+          }
         },
         tags: {
-          include: {
-            tag: true
+          select: {
+            tag: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        _count: {
+          select: { 
+            answers: true,
+            votes: true
           }
         },
         answers: {
-          select: { id: true, isAccepted: true }
+          select: { 
+            isAccepted: true 
+          }
         },
-        votes: true,
-        _count: {
-          select: { answers: true }
-        }
+        ...(req.user && {
+          votes: {
+            where: { userId: req.user.id },
+            select: { type: true }
+          }
+        })
       }
     });
 
-    const total = await req.prisma.question.count({ where });
+    // Get total count only when needed (first page or specific request)
+    let total = null;
+    if (page === 1 || req.query.includeTotal === 'true') {
+      total = await req.prisma.question.count({ where });
+    }
 
     const formattedQuestions = questions.map(question => ({
-      ...question,
+      id: question.id,
+      title: question.title,
+      content: question.content.substring(0, 300) + (question.content.length > 300 ? '...' : ''), // Truncate content
+      createdAt: question.createdAt,
+      views: question.views,
+      author: question.author,
       tags: question.tags.map(qt => qt.tag),
-      voteCount: question.votes.reduce((sum, vote) => 
-        sum + (vote.type === 'UP' ? 1 : -1), 0
-      ),
-      answerCount: question._count.answers,
-      hasAcceptedAnswer: question.answers.some(a => a.isAccepted)
+      voteCount: question._count.votes || 0,
+      answerCount: question._count.answers || 0,
+      hasAcceptedAnswer: question.answers.some(a => a.isAccepted),
+      userVote: req.user && question.votes?.length > 0 ? question.votes[0].type : null
     }));
 
-    res.json({
+    const response = {
       questions: formattedQuestions,
       pagination: {
         current: parseInt(page),
-        total: Math.ceil(total / limit),
-        hasNext: skip + parseInt(limit) < total,
+        limit: take,
+        hasNext: formattedQuestions.length === take,
         hasPrev: page > 1
       }
-    });
+    };
+
+    if (total !== null) {
+      response.pagination.total = Math.ceil(total / take);
+      response.pagination.totalItems = total;
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Get questions error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Get single question
+// Get single question - Optimized
 router.get('/:id', optionalAuth, async (req, res) => {
   try {
+    // Increment view count asynchronously
+    req.prisma.question.update({
+      where: { id: req.params.id },
+      data: { views: { increment: 1 } }
+    }).catch(console.error);
+
     const question = await req.prisma.question.findUnique({
       where: { id: req.params.id },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        views: true,
+        createdAt: true,
         author: {
           select: { id: true, username: true }
         },
         tags: {
-          include: {
-            tag: true
+          select: {
+            tag: {
+              select: { id: true, name: true }
+            }
           }
         },
         answers: {
-          include: {
+          select: {
+            id: true,
+            content: true,
+            isAccepted: true,
+            createdAt: true,
             author: {
               select: { id: true, username: true }
             },
-            votes: true,
+            _count: {
+              select: { votes: true }
+            },
+            ...(req.user && {
+              votes: {
+                where: { userId: req.user.id },
+                select: { type: true }
+              }
+            }),
             comments: {
-              include: {
+              select: {
+                id: true,
+                content: true,
+                createdAt: true,
                 user: {
                   select: { id: true, username: true }
                 }
               },
               orderBy: { createdAt: 'asc' }
-            },
-            _count: {
-              select: { votes: true }
             }
           },
           orderBy: [
@@ -117,7 +198,15 @@ router.get('/:id', optionalAuth, async (req, res) => {
             { createdAt: 'asc' }
           ]
         },
-        votes: true
+        _count: {
+          select: { votes: true }
+        },
+        ...(req.user && {
+          votes: {
+            where: { userId: req.user.id },
+            select: { type: true }
+          }
+        })
       }
     });
 
@@ -128,17 +217,13 @@ router.get('/:id', optionalAuth, async (req, res) => {
     const formattedQuestion = {
       ...question,
       tags: question.tags.map(qt => qt.tag),
-      voteCount: question.votes.reduce((sum, vote) => 
-        sum + (vote.type === 'UP' ? 1 : -1), 0
-      ),
+      voteCount: question._count.votes || 0,
       answers: question.answers.map(answer => ({
         ...answer,
-        voteCount: answer.votes.reduce((sum, vote) => 
-          sum + (vote.type === 'UP' ? 1 : -1), 0
-        ),
-        userVote: req.user ? answer.votes.find(v => v.userId === req.user.id)?.type : null
+        voteCount: answer._count.votes || 0,
+        userVote: req.user && answer.votes?.length > 0 ? answer.votes[0].type : null
       })),
-      userVote: req.user ? question.votes.find(v => v.userId === req.user.id)?.type : null
+      userVote: req.user && question.votes?.length > 0 ? question.votes[0].type : null
     };
 
     res.json(formattedQuestion);
