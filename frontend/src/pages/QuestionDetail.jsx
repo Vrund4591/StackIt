@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import VoteButton from '../components/VoteButton'
 import AnswerCard from '../components/AnswerCard'
 import LoadingSkeleton from '../components/LoadingSkeleton'
-import MentionInput from '../components/MentionInput'
+import RichTextEditor from '../components/RichTextEditor'
 
 const QuestionDetail = () => {
   const { id } = useParams()
@@ -61,7 +61,9 @@ const QuestionDetail = () => {
       return
     }
 
-    if (answer.trim().length < 30) {
+    // Strip HTML tags for length validation
+    const plainTextAnswer = answer.replace(/<[^>]*>/g, '').trim()
+    if (plainTextAnswer.length < 30) {
       setError('Answer must be at least 30 characters long')
       return
     }
@@ -77,7 +79,7 @@ const QuestionDetail = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          content: answer,
+          content: answer, // Send HTML content
           questionId: id
         })
       })
@@ -235,19 +237,19 @@ const QuestionDetail = () => {
           )}
           
           <form onSubmit={handleSubmitAnswer}>
-            <MentionInput
-              value={answer}
+            <RichTextEditor
+              content={answer}
               onChange={setAnswer}
-              className="w-full p-3 border rounded-lg h-32 mb-4"
               placeholder="Write your answer... (minimum 30 characters) Use @username to mention someone"
-              disabled={submitting}
+              className="mb-4"
+              minHeight="150px"
             />
             <div className="text-sm text-gray-500 mb-4">
-              {answer.length}/30 characters minimum
+              {answer.replace(/<[^>]*>/g, '').length}/30 characters minimum
             </div>
             <button 
               type="submit" 
-              disabled={submitting || answer.length < 30}
+              disabled={submitting || answer.replace(/<[^>]*>/g, '').length < 30}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg disabled:bg-blue-400"
             >
               {submitting ? 'Posting...' : 'Post Answer'}
