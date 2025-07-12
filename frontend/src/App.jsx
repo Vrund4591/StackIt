@@ -8,6 +8,7 @@ import Register from './pages/Register'
 import AskQuestion from './pages/AskQuestion'
 import QuestionDetail from './pages/QuestionDetail'
 import UserProfile from './pages/UserProfile'
+import AdminDashboard from './pages/AdminDashboard'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
               <Route path="/ask" element={<ProtectedRoute><AskQuestion /></ProtectedRoute>} />
               <Route path="/question/:id" element={<QuestionDetail />} />
               <Route path="/user/:username" element={<UserProfile />} />
+              <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             </Routes>
           </main>
         </div>
@@ -35,6 +37,11 @@ function App() {
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
   return user ? children : <Navigate to="/login" />
+}
+
+function AdminRoute({ children }) {
+  const { user } = useAuth()
+  return user && user.role === 'ADMIN' ? children : <Navigate to="/" />
 }
 
 export default App

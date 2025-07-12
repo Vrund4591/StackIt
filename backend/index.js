@@ -11,6 +11,7 @@ const tagRoutes = require('./routes/tags');
 const voteRoutes = require('./routes/votes');
 const notificationRoutes = require('./routes/notifications');
 const userRoutes = require('./routes/users');
+const adminRoutes = require('./routes/admin');
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use('/api/tags', tagRoutes);
 app.use('/api/votes', voteRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
