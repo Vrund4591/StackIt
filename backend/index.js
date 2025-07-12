@@ -12,6 +12,7 @@ const voteRoutes = require('./routes/votes');
 const notificationRoutes = require('./routes/notifications');
 const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
+const uploadRoutes = require('./routes/upload');
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use('/api/votes', voteRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

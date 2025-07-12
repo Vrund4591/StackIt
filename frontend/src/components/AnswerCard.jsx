@@ -23,7 +23,22 @@ const AnswerCard = ({ answer, questionAuthorId, onAcceptAnswer }) => {
           )}
           
           <div className="prose max-w-none mb-4">
-            <p className="text-gray-800 whitespace-pre-wrap">{answer.content}</p>
+            <div 
+              className="text-gray-800 prose prose-sm max-w-none
+                         prose-p:my-2 prose-code:bg-gray-100 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:font-mono
+                         prose-strong:font-semibold prose-em:italic prose-ul:my-2 prose-ol:my-2 prose-li:my-1
+                         prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:my-4 prose-blockquote:text-gray-700
+                         prose-a:text-blue-600 prose-a:underline hover:prose-a:text-blue-800
+                         prose-pre:bg-gray-100 prose-pre:p-4 prose-pre:rounded-lg prose-pre:font-mono prose-pre:text-sm prose-pre:my-4 prose-pre:overflow-x-auto
+                         prose-headings:mt-4 prose-headings:mb-2
+                         [&_mark]:bg-yellow-200 [&_mark]:px-1 [&_mark]:rounded
+                         [&_s]:line-through [&_u]:underline
+                         prose-ul:list-disc prose-ul:ml-6 prose-ol:list-decimal prose-ol:ml-6
+                         prose-img:max-w-full prose-img:h-auto prose-img:rounded-lg prose-img:my-4"
+              dangerouslySetInnerHTML={{ 
+                __html: answer.content.replace(/@(\w+)/g, '<span class="bg-blue-100 text-blue-800 px-1 rounded font-medium">@$1</span>') 
+              }}
+            />
           </div>
           
           <div className="flex items-center justify-between">

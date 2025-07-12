@@ -25,12 +25,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <Link
-                  to="/ask"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-                >
-                  Ask Question
-                </Link>
+              
                 
                 {/* Notification Dropdown */}
                 <NotificationDropdown />
