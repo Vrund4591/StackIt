@@ -17,8 +17,8 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="navbar-brand flex-shrink-0 flex items-center">
-              <img src="/logo.svg" alt="StackIt" className="h-8 w-8" />
-             <span className="ml-2 text-xl font-bold text-gray-900" style={{fontFamily: 'Caveat, cursive'}}>StackIt</span>
+              
+             <span className="ml-2 text-4xl font-bold text-gray-900" style={{fontFamily: 'Caveat, cursive'}}>StackIt</span>
             </Link>
           </div>
 
