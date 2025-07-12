@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken } = require('../middleware/auth');
+const { createNotification, createMentionNotifications } = require('../utils/notifications');
 
 const router = express.Router();
 
@@ -42,16 +43,29 @@ router.post('/', [
       }
     });
 
-    // Create notification for question author
+    // Create notification for question author with truncated title
     if (question.authorId !== req.user.id) {
-      await req.prisma.notification.create({
-        data: {
-          type: 'ANSWER',
-          message: `${req.user.username} answered your question: ${question.title}`,
-          userId: question.authorId
-        }
+      const truncatedTitle = question.title.length > 50 
+        ? question.title.substring(0, 50) + '...' 
+        : question.title;
+        
+      await createNotification(req.prisma, {
+        type: 'ANSWER',
+        message: `${req.user.username} answered your question: ${truncatedTitle}`,
+        userId: question.authorId,
+        relatedId: questionId, // Use questionId instead of answer.id for navigation
+        relatedType: 'QUESTION'
       });
     }
+
+    // Check for mentions in answer content
+    await createMentionNotifications(
+      req.prisma, 
+      content, 
+      req.user.id, 
+      answer.id, 
+      'ANSWER'
+    );
 
     res.status(201).json(answer);
   } catch (error) {
@@ -204,14 +218,23 @@ router.post('/:id/comments', [
 
     // Create notification for answer author
     if (answer.authorId !== req.user.id) {
-      await req.prisma.notification.create({
-        data: {
-          type: 'COMMENT',
-          message: `${req.user.username} commented on your answer`,
-          userId: answer.authorId
-        }
+      await createNotification(req.prisma, {
+        type: 'COMMENT',
+        message: `${req.user.username} commented on your answer`,
+        userId: answer.authorId,
+        relatedId: comment.id,
+        relatedType: 'COMMENT'
       });
     }
+
+    // Check for mentions in comment content
+    await createMentionNotifications(
+      req.prisma, 
+      req.body.content, 
+      req.user.id, 
+      comment.id, 
+      'COMMENT'
+    );
 
     res.status(201).json(comment);
   } catch (error) {

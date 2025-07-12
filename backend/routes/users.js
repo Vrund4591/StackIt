@@ -74,4 +74,37 @@ router.get('/me/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// Search users for mentions
+router.get('/search', optionalAuth, async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.length < 2) {
+      return res.json([]);
+    }
+
+    const users = await req.prisma.user.findMany({
+      where: {
+        username: {
+          contains: q,
+          mode: 'insensitive'
+        }
+      },
+      select: {
+        id: true,
+        username: true
+      },
+      take: 10,
+      orderBy: {
+        username: 'asc'
+      }
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error('User search error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

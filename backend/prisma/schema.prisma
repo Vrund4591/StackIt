@@ -14,21 +14,21 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  username     String   @unique
-  password     String
-  firstName    String?
-  lastName     String?
-  avatar       String?
-  reputation   Int      @default(0)
-  bio          String?
-  location     String?
-  website      String?
-  role         Role     @default(USER)
-  isVerified   Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id         String   @id @default(cuid())
+  email      String   @unique
+  username   String   @unique
+  password   String
+  firstName  String?
+  lastName   String?
+  avatar     String?
+  reputation Int      @default(0)
+  bio        String?
+  location   String?
+  website    String?
+  role       Role     @default(USER)
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
   questions     Question[]
@@ -41,19 +41,19 @@ model User {
 }
 
 model Question {
-  id          String   @id @default(cuid())
-  title       String
-  content     String
-  views       Int      @default(0)
-  authorId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  views     Int      @default(0)
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  answers  Answer[]
-  votes    Vote[]
-  tags     QuestionTag[]
+  author  User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  answers Answer[]
+  votes   Vote[]
+  tags    QuestionTag[]
 
   @@index([createdAt])
   @@index([authorId])
@@ -130,16 +130,19 @@ model Vote {
 }
 
 model Notification {
-  id        String           @id @default(cuid())
-  type      NotificationType
-  message   String
-  isRead    Boolean          @default(false)
-  userId    String
-  createdAt DateTime         @default(now())
+  id          String           @id @default(cuid())
+  type        NotificationType
+  message     String
+  isRead      Boolean          @default(false)
+  userId      String
+  relatedId   String? // ID of related question/answer/comment
+  relatedType String? // Type: QUESTION, ANSWER, COMMENT
+  createdAt   DateTime         @default(now())
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, isRead])
   @@map("notifications")
 }
 
@@ -173,5 +176,6 @@ enum NotificationType {
   ANSWER
   VOTE
   COMMENT
+  MENTION
   SYSTEM
 }
