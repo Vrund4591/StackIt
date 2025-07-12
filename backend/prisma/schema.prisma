@@ -34,6 +34,7 @@ model User {
   questions     Question[]
   answers       Answer[]
   votes         Vote[]
+  comments      Comment[]
   notifications Notification[]
 
   @@map("users")
@@ -67,9 +68,10 @@ model Answer {
   updatedAt  DateTime @updatedAt
 
   // Relations
-  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  question Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
   votes    Vote[]
+  comments Comment[]
 
   @@map("answers")
 }
@@ -131,6 +133,21 @@ model Notification {
   @@map("notifications")
 }
 
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String
+  answerId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answer Answer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
 enum Role {
   USER
   ADMIN
@@ -138,8 +155,8 @@ enum Role {
 }
 
 enum VoteType {
-  UPVOTE
-  DOWNVOTE
+  UP
+  DOWN
 }
 
 enum NotificationType {
