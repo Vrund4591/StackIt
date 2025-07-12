@@ -1,67 +1,231 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import VoteButton from '../components/VoteButton'
+import AnswerCard from '../components/AnswerCard'
 
 const QuestionDetail = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
+  const { user, token } = useAuth()
   const [question, setQuestion] = useState(null)
   const [answer, setAnswer] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  const API_URL = import.meta.env.VITE_API_URL
 
   useEffect(() => {
-    // Mock data for now
-    setQuestion({
-      id: parseInt(id),
-      title: "How to use React hooks?",
-      content: "I'm having trouble understanding React hooks...",
-      author: "john_doe",
-      tags: ["react", "javascript"],
-      upvotes: 5,
-      answers: [],
-      createdAt: new Date().toISOString()
-    })
+    fetchQuestion()
   }, [id])
 
-  const handleSubmitAnswer = (e) => {
-    e.preventDefault()
-    // TODO: Submit answer to backend
-    console.log({ questionId: id, answer })
-    setAnswer('')
+  const fetchQuestion = async () => {
+    try {
+      setLoading(true)
+      const headers = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch(`${API_URL}/api/questions/${id}`, {
+        headers
+      })
+
+      if (!response.ok) {
+        throw new Error('Question not found')
+      }
+
+      const data = await response.json()
+      setQuestion(data)
+    } catch (error) {
+      console.error('Error fetching question:', error)
+      setError('Failed to load question')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (!question) return <div>Loading...</div>
+  const handleSubmitAnswer = async (e) => {
+    e.preventDefault()
+    
+    if (!user) {
+      navigate('/login')
+      return
+    }
+
+    if (answer.trim().length < 30) {
+      setError('Answer must be at least 30 characters long')
+      return
+    }
+
+    setSubmitting(true)
+    setError('')
+
+    try {
+      const response = await fetch(`${API_URL}/api/answers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          content: answer,
+          questionId: id
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to post answer')
+      }
+
+      setAnswer('')
+      fetchQuestion() // Refresh to show new answer
+      setError('')
+    } catch (error) {
+      console.error('Error posting answer:', error)
+      setError(error.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleAcceptAnswer = async (answerId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/answers/${answerId}/accept`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to accept answer')
+      }
+
+      fetchQuestion() // Refresh to show accepted answer
+    } catch (error) {
+      console.error('Error accepting answer:', error)
+      alert('Failed to accept answer')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  if (error && !question) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-600">{error}</p>
+      </div>
+    )
+  }
+
+  if (!question) return <div>Question not found</div>
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h1 className="text-3xl font-bold mb-4">{question.title}</h1>
-        <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
-          <span>Asked by {question.author}</span>
-          <span>{new Date(question.createdAt).toLocaleDateString()}</span>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Question */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex gap-4">
+          <VoteButton
+            type="question"
+            itemId={question.id}
+            initialVoteCount={question.voteCount || 0}
+            userVote={question.userVote}
+          />
+          
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold mb-4">{question.title}</h1>
+            
+            <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+              <span>Asked by <strong>{question.author.username}</strong></span>
+              <span>{new Date(question.createdAt).toLocaleDateString()}</span>
+              <span>{question.answers?.length || 0} answers</span>
+            </div>
+            
+            <div className="mb-4">
+              {question.tags.map(tag => (
+                <span key={tag.id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm mr-2">
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+            
+            <div className="prose max-w-none">
+              <p className="text-gray-800 whitespace-pre-wrap">{question.content}</p>
+            </div>
+          </div>
         </div>
-        <div className="mb-4">
-          {question.tags.map(tag => (
-            <span key={tag} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm mr-2">
-              {tag}
-            </span>
-          ))}
-        </div>
-        <p className="text-gray-800">{question.content}</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold mb-4">Your Answer</h2>
-        <form onSubmit={handleSubmitAnswer}>
-          <textarea
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            className="w-full p-3 border rounded-lg h-32 mb-4"
-            placeholder="Write your answer..."
-            required
-          />
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg">
-            Post Answer
+      {/* Answers */}
+      {question.answers && question.answers.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold">
+            {question.answers.length} Answer{question.answers.length !== 1 ? 's' : ''}
+          </h2>
+          
+          {question.answers.map(answer => (
+            <AnswerCard
+              key={answer.id}
+              answer={answer}
+              questionAuthorId={question.author.id}
+              onAcceptAnswer={handleAcceptAnswer}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Answer Form */}
+      {user ? (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-bold mb-4">Your Answer</h2>
+          
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              {error}
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmitAnswer}>
+            <textarea
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              className="w-full p-3 border rounded-lg h-32 mb-4"
+              placeholder="Write your answer... (minimum 30 characters)"
+              required
+              minLength={30}
+            />
+            <div className="text-sm text-gray-500 mb-4">
+              {answer.length}/30 characters minimum
+            </div>
+            <button 
+              type="submit" 
+              disabled={submitting || answer.length < 30}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg disabled:bg-blue-400"
+            >
+              {submitting ? 'Posting...' : 'Post Answer'}
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className="bg-gray-50 rounded-lg p-6 text-center">
+          <p className="text-gray-600 mb-4">Please log in to post an answer</p>
+          <button 
+            onClick={() => navigate('/login')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+          >
+            Login
           </button>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
