@@ -121,7 +121,7 @@ const RightSidebar = () => {
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-900">⚡ Recent Activity</h3>
-          <Link to="/?sort=newest" className="text-blue-600 hover:text-blue-800 text-sm">
+          <Link to="/recent" className="text-blue-600 hover:text-blue-800 text-sm">
             View all
           </Link>
         </div>
@@ -152,7 +152,7 @@ const RightSidebar = () => {
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-900">🏆 Top Contributors</h3>
-          <Link to="/users" className="text-blue-600 hover:text-blue-800 text-sm">
+          <Link to="/popular" className="text-blue-600 hover:text-blue-800 text-sm">
             View all
           </Link>
         </div>
