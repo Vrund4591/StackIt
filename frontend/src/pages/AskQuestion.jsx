@@ -84,7 +84,7 @@ const AskQuestion = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Ask a Question</h1>
+      <h1 className="text-4xl font-heading font-bold text-primary mb-6">Ask a Question</h1>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -137,7 +137,7 @@ const AskQuestion = () => {
         <button 
           type="submit" 
           disabled={loading}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg disabled:bg-blue-400 hover:bg-blue-700 transition-colors duration-200 font-medium"
+          className="btn-primary disabled:bg-blue-400"
         >
           {loading ? 'Posting...' : 'Post Question'}
         </button>

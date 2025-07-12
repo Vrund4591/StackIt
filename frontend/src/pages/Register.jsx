@@ -21,7 +21,7 @@ const Register = () => {
 
   return (
     <div className="max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Register</h1>
+      <h1 className="text-4xl font-heading font-bold text-primary mb-6">Register</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-2">Username</label>
@@ -29,7 +29,7 @@ const Register = () => {
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
         </div>
@@ -39,7 +39,7 @@ const Register = () => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
         </div>
@@ -49,16 +49,16 @@ const Register = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
         </div>
-        <button type="submit" className="w-full bg-blue-600 text-white p-3 rounded-lg">
+        <button type="submit" className="btn-primary w-full">
           Register
         </button>
       </form>
       <p className="text-center mt-4">
-        Already have an account? <Link to="/login" className="text-blue-600">Login</Link>
+        Already have an account? <Link to="/login" className="text-blue-600 hover:text-blue-800">Login</Link>
       </p>
     </div>
   )

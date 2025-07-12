@@ -20,7 +20,7 @@ const Login = () => {
 
   return (
     <div className="max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Login</h1>
+      <h1 className="text-4xl font-heading font-bold text-primary mb-6">Login</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-2">Email</label>
@@ -28,7 +28,7 @@ const Login = () => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
         </div>
@@ -38,16 +38,16 @@ const Login = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 border rounded-lg"
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
         </div>
-        <button type="submit" className="w-full bg-blue-600 text-white p-3 rounded-lg">
+        <button type="submit" className="btn-primary w-full">
           Login
         </button>
       </form>
       <p className="text-center mt-4">
-        Don't have an account? <Link to="/register" className="text-blue-600">Register</Link>
+        Don't have an account? <Link to="/register" className="text-blue-600 hover:text-blue-800">Register</Link>
       </p>
     </div>
   )
