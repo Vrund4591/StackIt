@@ -2,6 +2,26 @@ import { Link } from 'react-router-dom'
 import VoteButton from './VoteButton'
 
 const QuestionCard = ({ question }) => {
+  // Create a truncated HTML preview
+  const createPreview = (htmlContent, maxLength = 200) => {
+    // First strip HTML to check length
+    const textContent = htmlContent.replace(/<[^>]*>/g, '')
+    if (textContent.length <= maxLength) {
+      return htmlContent
+    }
+    
+    // If too long, truncate the text and add ellipsis
+    const truncatedText = textContent.substring(0, maxLength)
+    const lastSpaceIndex = truncatedText.lastIndexOf(' ')
+    const finalText = lastSpaceIndex > 0 ? truncatedText.substring(0, lastSpaceIndex) : truncatedText
+    
+    // Return as plain text with ellipsis since we truncated
+    return finalText + '...'
+  }
+
+  const previewContent = createPreview(question.content)
+  const isHtmlContent = previewContent === question.content
+
   return (
     <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
       {/* Author info at top - Reddit style */}
@@ -55,9 +75,21 @@ const QuestionCard = ({ question }) => {
             {question.title}
           </Link>
           
-          <p className="text-gray-600 mb-4 line-clamp-2">
-            {question.content.replace(/<[^>]*>/g, '').substring(0, 200)}...
-          </p>
+          {isHtmlContent ? (
+            <div 
+              className="text-gray-600 mb-4 prose prose-sm max-w-none line-clamp-3 
+                         prose-p:my-1 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
+                         prose-strong:font-semibold prose-em:italic prose-ul:my-1 prose-ol:my-1 prose-li:my-0
+                         prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:pl-2 prose-blockquote:italic
+                         prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
+                         [&_*]:whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{ __html: previewContent }}
+            />
+          ) : (
+            <p className="text-gray-600 mb-4 line-clamp-3 whitespace-pre-wrap">
+              {previewContent}
+            </p>
+          )}
           
           <div className="flex items-center gap-2 mb-3">
             {question.tags.map(tag => (

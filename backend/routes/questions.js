@@ -257,33 +257,48 @@ router.post('/', [
 
     const { title, description, tags = [] } = req.body;
 
-    // Create or find tags only if tags are provided
-    const tagObjects = tags.length > 0 ? await Promise.all(
-      tags.map(async (tagName) => {
+    // First create the question without tags
+    const question = await req.prisma.question.create({
+      data: {
+        title,
+        content: description,
+        authorId: req.user.id
+      }
+    });
+
+    // Then handle tags if provided
+    if (tags.length > 0) {
+      // Remove duplicates and clean tag names
+      const uniqueTags = [...new Set(tags.map(tag => tag.toLowerCase().trim()))].filter(Boolean);
+      
+      for (const tagName of uniqueTags) {
+        // Upsert tag
         const tag = await req.prisma.tag.upsert({
-          where: { name: tagName.toLowerCase() },
+          where: { name: tagName },
           update: {},
-          create: { name: tagName.toLowerCase() }
+          create: { name: tagName }
         });
-        return { tagId: tag.id };
-      })
-    ) : [];
 
-    // Create question
-    const questionData = {
-      title,
-      content: description,
-      authorId: req.user.id
-    };
-
-    if (tagObjects.length > 0) {
-      questionData.tags = {
-        create: tagObjects
-      };
+        // Create question-tag relationship only if it doesn't exist
+        await req.prisma.questionTag.upsert({
+          where: {
+            questionId_tagId: {
+              questionId: question.id,
+              tagId: tag.id
+            }
+          },
+          update: {},
+          create: {
+            questionId: question.id,
+            tagId: tag.id
+          }
+        });
+      }
     }
 
-    const question = await req.prisma.question.create({
-      data: questionData,
+    // Fetch the complete question with relationships
+    const completeQuestion = await req.prisma.question.findUnique({
+      where: { id: question.id },
       include: {
         author: {
           select: { id: true, username: true }
@@ -297,8 +312,8 @@ router.post('/', [
     });
 
     res.status(201).json({
-      ...question,
-      tags: question.tags.map(qt => qt.tag)
+      ...completeQuestion,
+      tags: completeQuestion.tags.map(qt => qt.tag)
     });
   } catch (error) {
     console.error('Create question error:', error);
@@ -335,32 +350,43 @@ router.put('/:id', [
     if (req.body.title) updateData.title = req.body.title;
     if (req.body.description) updateData.content = req.body.description;
 
-    if (req.body.tags) {
+    // Update basic fields first
+    await req.prisma.question.update({
+      where: { id: req.params.id },
+      data: updateData
+    });
+
+    // Handle tags separately if provided
+    if (req.body.tags !== undefined) {
       // Delete existing tags
       await req.prisma.questionTag.deleteMany({
         where: { questionId: req.params.id }
       });
 
-      // Create new tags
-      const tagObjects = await Promise.all(
-        req.body.tags.map(async (tagName) => {
+      // Add new tags if any
+      if (req.body.tags.length > 0) {
+        const uniqueTags = [...new Set(req.body.tags.map(tag => tag.toLowerCase().trim()))].filter(Boolean);
+        
+        for (const tagName of uniqueTags) {
           const tag = await req.prisma.tag.upsert({
-            where: { name: tagName.toLowerCase() },
+            where: { name: tagName },
             update: {},
-            create: { name: tagName.toLowerCase() }
+            create: { name: tagName }
           });
-          return { tagId: tag.id };
-        })
-      );
 
-      updateData.tags = {
-        create: tagObjects
-      };
+          await req.prisma.questionTag.create({
+            data: {
+              questionId: req.params.id,
+              tagId: tag.id
+            }
+          });
+        }
+      }
     }
 
-    const updatedQuestion = await req.prisma.question.update({
+    // Fetch updated question
+    const updatedQuestion = await req.prisma.question.findUnique({
       where: { id: req.params.id },
-      data: updateData,
       include: {
         author: {
           select: { id: true, username: true }
