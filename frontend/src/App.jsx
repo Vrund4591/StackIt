@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import AskQuestion from './pages/AskQuestion'
 import QuestionDetail from './pages/QuestionDetail'
+import UserProfile from './pages/UserProfile'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/ask" element={<ProtectedRoute><AskQuestion /></ProtectedRoute>} />
               <Route path="/question/:id" element={<QuestionDetail />} />
+              <Route path="/user/:username" element={<UserProfile />} />
             </Routes>
           </main>
         </div>

@@ -57,6 +57,22 @@ const LoadingSkeleton = ({ type = 'question' }) => {
     );
   }
 
+  if (type === 'profile') {
+    return (
+      <div className="bg-white rounded-lg shadow p-6 animate-pulse">
+        <div className="flex items-start gap-6">
+          <div className="w-24 h-24 bg-gray-300 rounded-full"></div>
+          <div className="flex-1">
+            <div className="h-8 bg-gray-300 rounded w-48 mb-4"></div>
+            <div className="h-4 bg-gray-300 rounded w-96 mb-2"></div>
+            <div className="h-4 bg-gray-300 rounded w-64 mb-4"></div>
+            <div className="h-16 bg-gray-300 rounded w-full"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return null;
 };
 

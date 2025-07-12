@@ -7,7 +7,7 @@ const router = express.Router();
 // Get all questions - Optimized version
 router.get('/', optionalAuth, async (req, res) => {
   try {
-    const { page = 1, limit = 10, tag, search, sort = 'newest' } = req.query;
+    const { page = 1, limit = 10, tag, search, sort = 'newest', author } = req.query;
     const skip = (page - 1) * parseInt(limit);
     const take = Math.min(parseInt(limit), 50); // Cap at 50 items
 
@@ -27,6 +27,12 @@ router.get('/', optionalAuth, async (req, res) => {
             name: tag
           }
         }
+      };
+    }
+
+    if (author) {
+      where.author = {
+        username: author
       };
     }
 
@@ -236,9 +242,9 @@ router.get('/:id', optionalAuth, async (req, res) => {
 // Create question
 router.post('/', [
   authenticateToken,
-  body('title').isLength({ min: 5, max: 150 }).trim(),
-  body('description').isLength({ min: 10 }),
-  body('tags').isArray({ min: 0, max: 5 }).optional()
+  body('title').isLength({ min: 1}).trim(),
+  body('description').isLength({ min: 1 }),
+  body('tags').isArray({ min: 0 }).optional()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -303,9 +309,9 @@ router.post('/', [
 // Update question (only by author)
 router.put('/:id', [
   authenticateToken,
-  body('title').optional().isLength({ min: 10, max: 150 }).trim(),
-  body('description').optional().isLength({ min: 30 }),
-  body('tags').optional().isArray({ min: 1, max: 5 })
+  body('title').optional().isLength({ min: 1 }).trim(),
+  body('description').optional().isLength({ min: 1 }),
+  body('tags').optional().isArray({ min: 0 })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -381,7 +387,12 @@ router.put('/:id', [
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const question = await req.prisma.question.findUnique({
-      where: { id: req.params.id }
+      where: { id: req.params.id },
+      include: {
+        author: {
+          select: { id: true, username: true }
+        }
+      }
     });
 
     if (!question) {
@@ -389,7 +400,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 
     if (question.authorId !== req.user.id && req.user.role !== 'ADMIN') {
-      return res.status(403).json({ error: 'Not authorized' });
+      return res.status(403).json({ error: 'Not authorized to delete this question' });
     }
 
     await req.prisma.question.delete({

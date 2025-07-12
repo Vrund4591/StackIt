@@ -35,6 +35,20 @@ const QuestionCard = ({ question }) => {
             ))}
           </div>
           
+          <div className="flex items-center gap-4 mb-3 text-sm text-gray-600">
+            <span>
+              Asked by{' '}
+              <Link 
+                to={`/user/${question.author.username}`}
+                className="font-medium text-blue-600 hover:text-blue-800"
+              >
+                {question.author.username}
+              </Link>
+            </span>
+            <span>{new Date(question.createdAt).toLocaleDateString()}</span>
+            <span>{question.views} views</span>
+          </div>
+          
           <div className="flex items-center justify-between text-sm text-gray-500">
             <span>Asked by <strong>{question.author.username}</strong></span>
             <div className="flex items-center gap-4">
