@@ -11,10 +11,13 @@ const Navbar = () => {
           {/* Logo/Brand */}
           <Link 
             to="/" 
-            className="flex items-center text-2xl font-bold text-blue-600 hover:text-blue-800 transition-colors duration-200"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            className="flex items-center hover:opacity-80 transition-opacity duration-200"
           >
-            StackIt
+            <img 
+              src="/logo.svg" 
+              alt="StackIt Logo" 
+              className="h-16 w-auto"
+            />
           </Link>
           
           {/* Navigation Items */}
