@@ -1,54 +1,98 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import QuestionCard from '../components/QuestionCard'
 import SearchFilters from '../components/SearchFilters'
+import LoadingSkeleton from '../components/LoadingSkeleton'
 
 const Home = () => {
   const [questions, setQuestions] = useState([])
-  const [filteredQuestions, setFilteredQuestions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [error, setError] = useState('')
   const [filters, setFilters] = useState({
     search: '',
     tag: '',
+    sort: 'newest',
     page: 1
   })
 
-  // Get API URL from environment variable with fallback
+  const observer = useRef()
   const API_URL = import.meta.env.VITE_API_URL
 
-  useEffect(() => {
-    fetchQuestions()
-  }, [filters])
-
-  const fetchQuestions = async () => {
+  const fetchQuestions = useCallback(async (page = 1, reset = false) => {
     try {
-      setLoading(true)
-      const params = new URLSearchParams()
-      if (filters.search) params.append('search', filters.search)
-      if (filters.tag) params.append('tag', filters.tag)
-      params.append('page', filters.page.toString())
+      if (page === 1) {
+        setLoading(true)
+        setError('')
+      } else {
+        setLoadingMore(true)
+      }
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '10',
+        ...(filters.search && { search: filters.search }),
+        ...(filters.tag && { tag: filters.tag }),
+        ...(filters.sort && { sort: filters.sort }),
+        ...(page === 1 && { includeTotal: 'true' })
+      })
       
-      const apiUrl = `${API_URL}/api/questions?${params}`
+      const response = await fetch(`${API_URL}/api/questions?${params}`)
       
-      const response = await fetch(apiUrl)
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`)
       }
       
       const data = await response.json()
+      const newQuestions = data.questions || []
       
-      // Backend returns { questions: [...], pagination: {...} }
-      const questionsList = data.questions || []
-      setQuestions(questionsList)
-      setFilteredQuestions(questionsList)
+      if (reset || page === 1) {
+        setQuestions(newQuestions)
+      } else {
+        setQuestions(prev => [...prev, ...newQuestions])
+      }
+      
+      setHasMore(data.pagination.hasNext)
+      setFilters(prev => ({ ...prev, page }))
+      
     } catch (error) {
       console.error('Error fetching questions:', error)
-      // Set empty array as fallback
-      setQuestions([])
-      setFilteredQuestions([])
+      setError('Failed to load questions. Please try again.')
+      if (page === 1) {
+        setQuestions([])
+      }
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
+  }, [API_URL, filters.search, filters.tag, filters.sort])
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchQuestions(1, true)
+    }, filters.search ? 500 : 0)
+
+    return () => clearTimeout(timeoutId)
+  }, [filters.search, filters.tag, filters.sort])
+
+  // Infinite scroll
+  const lastQuestionElementRef = useCallback(node => {
+    if (loading || loadingMore) return
+    if (observer.current) observer.current.disconnect()
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        fetchQuestions(filters.page + 1)
+      }
+    })
+    
+    if (node) observer.current.observe(node)
+  }, [loading, loadingMore, hasMore, filters.page, fetchQuestions])
+
+  const handleFiltersChange = (newFilters) => {
+    setFilters(prev => ({ ...prev, ...newFilters, page: 1 }))
   }
 
   return (
@@ -63,28 +107,66 @@ const Home = () => {
       </div>
 
       <SearchFilters 
-        questions={questions}
-        onFilter={setFilteredQuestions}
         filters={filters} 
-        onFiltersChange={setFilters} 
+        onFiltersChange={handleFiltersChange}
       />
 
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+          <button 
+            onClick={() => fetchQuestions(1, true)}
+            className="ml-2 underline"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
       {loading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <LoadingSkeleton key={i} type="question" />
+          ))}
         </div>
       ) : (
-        <div className="space-y-4">
-          {filteredQuestions.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No questions found. Be the first to ask!</p>
+        <>
+          <div className="space-y-4">
+            {questions.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">
+                  {filters.search || filters.tag 
+                    ? 'No questions found matching your criteria.' 
+                    : 'No questions found. Be the first to ask!'
+                  }
+                </p>
+              </div>
+            ) : (
+              questions.map((question, index) => (
+                <div 
+                  key={question.id}
+                  ref={index === questions.length - 1 ? lastQuestionElementRef : null}
+                >
+                  <QuestionCard question={question} />
+                </div>
+              ))
+            )}
+          </div>
+
+          {loadingMore && (
+            <div className="space-y-4 mt-4">
+              {[...Array(3)].map((_, i) => (
+                <LoadingSkeleton key={i} type="question" />
+              ))}
             </div>
-          ) : (
-            filteredQuestions.map(question => (
-              <QuestionCard key={question.id} question={question} />
-            ))
           )}
-        </div>
+
+          {!hasMore && questions.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-500">You've reached the end!</p>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
