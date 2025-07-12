@@ -16,19 +16,19 @@ const LeftSidebar = () => {
     },
     {
       name: 'Popular',
-      path: '/?sort=votes',
+      path: '/popular',
       icon: '🔥',
       description: 'Most voted questions'
     },
     {
       name: 'Recent',
-      path: '/?sort=newest',
+      path: '/recent',
       icon: '🕒',
       description: 'Latest questions'
     },
     {
       name: 'Unanswered',
-      path: '/?answered=false',
+      path: '/unanswered',
       icon: '❓',
       description: 'Questions awaiting answers'
     },
@@ -53,12 +53,12 @@ const LeftSidebar = () => {
       icon: '💬',
       description: 'Your answers'
     },
-    {
-      name: 'Saved',
-      path: '/saved',
-      icon: '⭐',
-      description: 'Bookmarked questions'
-    },
+    // {
+    //   name: 'Saved',
+    //   path: '/saved',
+    //   icon: '⭐',
+    //   description: 'Bookmarked questions'
+    // },
     {
       name: 'Notifications',
       path: '/notifications',
@@ -71,7 +71,10 @@ const LeftSidebar = () => {
     if (path === '/') {
       return location.pathname === '/' && !location.search
     }
-    return location.pathname + location.search === path
+    if (path.includes('?')) {
+      return location.pathname + location.search === path
+    }
+    return location.pathname === path
   }
 
   const NavItem = ({ item, isActive }) => (
