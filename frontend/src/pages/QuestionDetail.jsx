@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import VoteButton from '../components/VoteButton'
 import AnswerCard from '../components/AnswerCard'
@@ -164,7 +164,15 @@ const QuestionDetail = () => {
             <h1 className="text-3xl font-bold mb-4">{question.title}</h1>
             
             <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
-              <span>Asked by <strong>{question.author.username}</strong></span>
+              <span>
+                Asked by{' '}
+                <Link 
+                  to={`/user/${question.author.username}`}
+                  className="font-medium text-blue-600 hover:text-blue-800"
+                >
+                  {question.author.username}
+                </Link>
+              </span>
               <span>{new Date(question.createdAt).toLocaleDateString()}</span>
               <span>{question.answers?.length || 0} answers</span>
             </div>
