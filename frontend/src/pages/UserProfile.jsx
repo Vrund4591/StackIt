@@ -147,7 +147,7 @@ const UserProfile = () => {
           </div>
           
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">{user.username}</h1>
+            <h1 className="text-3xl font-heading font-bold text-primary mb-2">{user.username}</h1>
             
             <div className="flex flex-wrap gap-4 mb-4 text-sm text-gray-600">
               <span>Reputation: <strong>{user.reputation || 0}</strong></span>
@@ -181,11 +181,11 @@ const UserProfile = () => {
       {/* User's Questions */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-2xl font-heading font-bold">
             {isOwner ? 'Your' : `${user.username}'s`} Questions ({questions.length})
           </h2>
           {isOwner && (
-            <Link to="/ask" className="bg-blue-600 text-white px-4 py-2 rounded-lg">
+            <Link to="/ask" className="btn-primary">
               Ask New Question
             </Link>
           )}
@@ -202,7 +202,7 @@ const UserProfile = () => {
             {isOwner && (
               <Link 
                 to="/ask"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+                className="btn-primary"
               >
                 Ask Your First Question
               </Link>

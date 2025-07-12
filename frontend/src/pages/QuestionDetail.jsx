@@ -164,7 +164,7 @@ const QuestionDetail = () => {
           />
           
           <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-4">{question.title}</h1>
+            <h1 className="text-3xl font-heading font-bold text-primary mb-4">{question.title}</h1>
             
             <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
               <span>
@@ -210,7 +210,7 @@ const QuestionDetail = () => {
       {/* Answers */}
       {question.answers && question.answers.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-2xl font-heading font-bold">
             {question.answers.length} Answer{question.answers.length !== 1 ? 's' : ''}
           </h2>
           
@@ -228,7 +228,7 @@ const QuestionDetail = () => {
       {/* Answer Form */}
       {user ? (
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Your Answer</h2>
+          <h2 className="text-xl font-heading font-bold mb-4">Your Answer</h2>
           
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -250,7 +250,7 @@ const QuestionDetail = () => {
             <button 
               type="submit" 
               disabled={submitting || answer.replace(/<[^>]*>/g, '').length < 30}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg disabled:bg-blue-400"
+              className="btn-primary disabled:bg-blue-400"
             >
               {submitting ? 'Posting...' : 'Post Answer'}
             </button>
@@ -261,7 +261,7 @@ const QuestionDetail = () => {
           <p className="text-gray-600 mb-4">Please log in to post an answer</p>
           <button 
             onClick={() => navigate('/login')}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+            className="btn-primary"
           >
             Login
           </button>
