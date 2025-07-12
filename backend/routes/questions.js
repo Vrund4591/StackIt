@@ -15,7 +15,7 @@ router.get('/', optionalAuth, async (req, res) => {
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { content: { contains: search, mode: 'insensitive' } }
       ];
     }
 
@@ -151,20 +151,23 @@ router.get('/:id', optionalAuth, async (req, res) => {
 // Create question
 router.post('/', [
   authenticateToken,
-  body('title').isLength({ min: 10, max: 150 }).trim(),
-  body('description').isLength({ min: 30 }),
-  body('tags').isArray({ min: 1, max: 5 })
+  body('title').isLength({ min: 5, max: 150 }).trim(),
+  body('description').isLength({ min: 10 }),
+  body('tags').isArray({ min: 0, max: 5 }).optional()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: errors.array()
+      });
     }
 
-    const { title, description, tags } = req.body;
+    const { title, description, tags = [] } = req.body;
 
-    // Create or find tags
-    const tagObjects = await Promise.all(
+    // Create or find tags only if tags are provided
+    const tagObjects = tags.length > 0 ? await Promise.all(
       tags.map(async (tagName) => {
         const tag = await req.prisma.tag.upsert({
           where: { name: tagName.toLowerCase() },
@@ -173,18 +176,23 @@ router.post('/', [
         });
         return { tagId: tag.id };
       })
-    );
+    ) : [];
 
     // Create question
+    const questionData = {
+      title,
+      content: description,
+      authorId: req.user.id
+    };
+
+    if (tagObjects.length > 0) {
+      questionData.tags = {
+        create: tagObjects
+      };
+    }
+
     const question = await req.prisma.question.create({
-      data: {
-        title,
-        description,
-        authorId: req.user.id,
-        tags: {
-          create: tagObjects
-        }
-      },
+      data: questionData,
       include: {
         author: {
           select: { id: true, username: true }
@@ -234,7 +242,7 @@ router.put('/:id', [
 
     const updateData = {};
     if (req.body.title) updateData.title = req.body.title;
-    if (req.body.description) updateData.description = req.body.description;
+    if (req.body.description) updateData.content = req.body.description;
 
     if (req.body.tags) {
       // Delete existing tags
