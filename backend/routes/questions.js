@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { createMentionNotifications } = require('../utils/notifications');
 
 const router = express.Router();
 
@@ -295,6 +296,15 @@ router.post('/', [
         });
       }
     }
+
+    // Check for mentions in question content
+    await createMentionNotifications(
+      req.prisma, 
+      description, 
+      req.user.id, 
+      question.id, 
+      'QUESTION'
+    );
 
     // Fetch the complete question with relationships
     const completeQuestion = await req.prisma.question.findUnique({

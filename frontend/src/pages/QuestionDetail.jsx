@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import VoteButton from '../components/VoteButton'
 import AnswerCard from '../components/AnswerCard'
 import LoadingSkeleton from '../components/LoadingSkeleton'
+import MentionInput from '../components/MentionInput'
 
 const QuestionDetail = () => {
   const { id } = useParams()
@@ -197,7 +198,7 @@ const QuestionDetail = () => {
                            [&_mark]:bg-yellow-200 [&_mark]:px-1 [&_mark]:rounded
                            [&_s]:line-through [&_u]:underline
                            prose-ul:list-disc prose-ul:ml-6 prose-ol:list-decimal prose-ol:ml-6"
-                dangerouslySetInnerHTML={{ __html: question.content }}
+                dangerouslySetInnerHTML={{ __html: question.content.replace(/@(\w+)/g, '<span class="bg-blue-100 text-blue-800 px-1 rounded font-medium">@$1</span>') }}
               />
             </div>
           </div>
@@ -234,13 +235,12 @@ const QuestionDetail = () => {
           )}
           
           <form onSubmit={handleSubmitAnswer}>
-            <textarea
+            <MentionInput
               value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
+              onChange={setAnswer}
               className="w-full p-3 border rounded-lg h-32 mb-4"
-              placeholder="Write your answer... (minimum 30 characters)"
-              required
-              minLength={30}
+              placeholder="Write your answer... (minimum 30 characters) Use @username to mention someone"
+              disabled={submitting}
             />
             <div className="text-sm text-gray-500 mb-4">
               {answer.length}/30 characters minimum

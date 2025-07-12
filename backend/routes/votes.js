@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authenticateToken } = require('../middleware/auth');
+const { createNotification } = require('../utils/notifications');
 
 const router = express.Router();
 
@@ -20,7 +21,8 @@ router.post('/answer/:id', [
 
     // Check if answer exists
     const answer = await req.prisma.answer.findUnique({
-      where: { id: answerId }
+      where: { id: answerId },
+      include: { author: true }
     });
 
     if (!answer) {
@@ -37,6 +39,8 @@ router.post('/answer/:id', [
       }
     });
 
+    let voteAction = 'created';
+    
     if (existingVote) {
       if (existingVote.type === type) {
         // Remove vote if same type
@@ -50,20 +54,37 @@ router.post('/answer/:id', [
           where: { id: existingVote.id },
           data: { type }
         });
-        return res.json({ message: 'Vote updated' });
+        voteAction = 'updated';
       }
+    } else {
+      // Create new vote
+      await req.prisma.vote.create({
+        data: {
+          type,
+          userId: req.user.id,
+          answerId: answerId
+        }
+      });
     }
 
-    // Create new vote
-    await req.prisma.vote.create({
-      data: {
-        type,
-        userId: req.user.id,
-        answerId: answerId
-      }
-    });
+    // Create notification for answer author (only for upvotes and not self-votes)
+    if (type === 'UP' && answer.authorId !== req.user.id) {
+      // Get the question ID for navigation
+      const answerWithQuestion = await req.prisma.answer.findUnique({
+        where: { id: answerId },
+        include: { question: { select: { id: true } } }
+      });
+      
+      await createNotification(req.prisma, {
+        type: 'VOTE',
+        message: `${req.user.username} upvoted your answer`,
+        userId: answer.authorId,
+        relatedId: answerWithQuestion.question.id, // Use question ID for navigation
+        relatedType: 'QUESTION'
+      });
+    }
 
-    res.json({ message: 'Vote created' });
+    res.json({ message: `Vote ${voteAction}` });
   } catch (error) {
     console.error('Vote answer error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -86,7 +107,8 @@ router.post('/question/:id', [
 
     // Check if question exists
     const question = await req.prisma.question.findUnique({
-      where: { id: questionId }
+      where: { id: questionId },
+      include: { author: true }
     });
 
     if (!question) {
@@ -103,6 +125,8 @@ router.post('/question/:id', [
       }
     });
 
+    let voteAction = 'created';
+
     if (existingVote) {
       if (existingVote.type === type) {
         // Remove vote if same type
@@ -116,20 +140,31 @@ router.post('/question/:id', [
           where: { id: existingVote.id },
           data: { type }
         });
-        return res.json({ message: 'Vote updated' });
+        voteAction = 'updated';
       }
+    } else {
+      // Create new vote
+      await req.prisma.vote.create({
+        data: {
+          type,
+          userId: req.user.id,
+          questionId: questionId
+        }
+      });
     }
 
-    // Create new vote
-    await req.prisma.vote.create({
-      data: {
-        type,
-        userId: req.user.id,
-        questionId: questionId
-      }
-    });
+    // Create notification for question author (only for upvotes and not self-votes)
+    if (type === 'UP' && question.authorId !== req.user.id) {
+      await createNotification(req.prisma, {
+        type: 'VOTE',
+        message: `${req.user.username} upvoted your question: ${question.title}`,
+        userId: question.authorId,
+        relatedId: questionId,
+        relatedType: 'QUESTION'
+      });
+    }
 
-    res.json({ message: 'Vote created' });
+    res.json({ message: `Vote ${voteAction}` });
   } catch (error) {
     console.error('Vote question error:', error);
     res.status(500).json({ error: 'Server error' });

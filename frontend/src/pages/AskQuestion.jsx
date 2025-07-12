@@ -9,6 +9,7 @@ import Color from '@tiptap/extension-color'
 import TextStyle from '@tiptap/extension-text-style'
 import Highlight from '@tiptap/extension-highlight'
 import Underline from '@tiptap/extension-underline'
+import Mention from '@tiptap/extension-mention'
 import LinkModal from '../components/LinkModal'
 
 // Import icons
@@ -36,6 +37,7 @@ const AskQuestion = () => {
   const [error, setError] = useState('')
   const [linkModalOpen, setLinkModalOpen] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [mentionSuggestions, setMentionSuggestions] = useState([])
   const navigate = useNavigate()
   const { user, token } = useAuth()
 
@@ -57,6 +59,24 @@ const AskQuestion = () => {
     '👆', '👇', '☝️', '✋', '🤚', '🖐️', '🖖', '👋', '🤏', '💪',
     '🙏', '✍️', '💡', '🔥', '💯', '✅', '❌', '⭐', '🎉', '🎊'
   ]
+
+  // Search users for mentions
+  const searchUsers = async (query) => {
+    if (query.length < 2) return []
+    
+    try {
+      const response = await fetch(`${API_URL}/api/users/search?q=${encodeURIComponent(query)}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      })
+      if (response.ok) {
+        const users = await response.json()
+        return users.slice(0, 5)
+      }
+    } catch (error) {
+      console.error('Error searching users:', error)
+    }
+    return []
+  }
 
   // Tiptap editor configuration
   const editor = useEditor({
@@ -117,6 +137,86 @@ const AskQuestion = () => {
         },
       }),
       Underline,
+      Mention.configure({
+        HTMLAttributes: {
+          class: 'mention bg-blue-100 text-blue-800 px-1 rounded font-medium',
+        },
+        suggestion: {
+          items: async ({ query }) => {
+            return await searchUsers(query)
+          },
+          render: () => {
+            let component
+            let popup
+
+            return {
+              onStart: (props) => {
+                component = document.createElement('div')
+                component.className = 'mention-suggestions bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50'
+                
+                popup = document.createElement('div')
+                popup.className = 'fixed z-50'
+                popup.appendChild(component)
+                document.body.appendChild(popup)
+
+                this.updateProps(props)
+              },
+
+              onUpdate: (props) => {
+                this.updateProps(props)
+              },
+
+              onKeyDown: (props) => {
+                if (props.event.key === 'Escape') {
+                  popup.remove()
+                  return true
+                }
+                return false
+              },
+
+              onExit: () => {
+                if (popup) {
+                  popup.remove()
+                }
+              },
+
+              updateProps: (props) => {
+                const { items, command } = props
+                
+                if (items.length === 0) {
+                  component.innerHTML = '<div class="px-4 py-2 text-gray-500 text-sm">No users found</div>'
+                  return
+                }
+
+                component.innerHTML = items
+                  .map((item, index) => 
+                    `<div class="mention-item px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2 ${index === 0 ? 'bg-gray-50' : ''}" data-index="${index}">
+                      <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center">
+                        <span class="text-xs font-medium">${item.username.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <span class="text-sm">@${item.username}</span>
+                    </div>`
+                  )
+                  .join('')
+
+                // Add click handlers
+                component.querySelectorAll('.mention-item').forEach((item, index) => {
+                  item.addEventListener('click', () => {
+                    command({ id: items[index].id, label: items[index].username })
+                  })
+                })
+
+                // Position the popup
+                const rect = props.decorationNode?.getBoundingClientRect()
+                if (rect) {
+                  popup.style.left = `${rect.left}px`
+                  popup.style.top = `${rect.bottom + 8}px`
+                }
+              }
+            }
+          }
+        }
+      })
     ],
     content: '',
     editorProps: {
@@ -406,7 +506,7 @@ const AskQuestion = () => {
             />
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            Select text and use the toolbar to format. Press Ctrl+B for bold, Ctrl+I for italic. Use lists for better organization. Click the smile icon to add emojis! 😊
+            Select text and use the toolbar to format. Press Ctrl+B for bold, Ctrl+I for italic. Use lists for better organization. Click the smile icon to add emojis! 😊 Type @ to mention users.
           </p>
         </div>
         

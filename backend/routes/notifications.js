@@ -3,13 +3,26 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Get user notifications
+// Get user notifications with pagination
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * parseInt(limit);
+
     const notifications = await req.prisma.notification.findMany({
       where: { userId: req.user.id },
       orderBy: { createdAt: 'desc' },
-      take: 50
+      skip,
+      take: parseInt(limit),
+      select: {
+        id: true,
+        type: true,
+        message: true,
+        isRead: true,
+        createdAt: true,
+        relatedId: true,
+        relatedType: true
+      }
     });
 
     const unreadCount = await req.prisma.notification.count({
@@ -19,9 +32,30 @@ router.get('/', authenticateToken, async (req, res) => {
       }
     });
 
-    res.json({ notifications, unreadCount });
+    res.json({ 
+      notifications, 
+      unreadCount,
+      hasMore: notifications.length === parseInt(limit)
+    });
   } catch (error) {
     console.error('Get notifications error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get unread count only
+router.get('/unread-count', authenticateToken, async (req, res) => {
+  try {
+    const unreadCount = await req.prisma.notification.count({
+      where: {
+        userId: req.user.id,
+        isRead: false
+      }
+    });
+
+    res.json({ unreadCount });
+  } catch (error) {
+    console.error('Get unread count error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -67,23 +101,6 @@ router.patch('/read-all', authenticateToken, async (req, res) => {
     res.json({ message: 'All notifications marked as read' });
   } catch (error) {
     console.error('Mark all notifications read error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Get notifications by userId
-router.get('/user/:userId', async (req, res) => {
-  try {
-    const notifications = await req.prisma.notification.findMany({
-      where: { userId: req.params.userId },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    res.json(notifications);
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
